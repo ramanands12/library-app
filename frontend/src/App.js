@@ -1,46 +1,46 @@
 import { useEffect, useState } from "react";
+import { getBooks, addBook } from "./services/api";
 
 function App() {
   const [books, setBooks] = useState([]);
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  // Fetch books from backend
   useEffect(() => {
-    fetch("http://localhost:8000/books")
-      .then((res) => res.json())
-      .then((data) => setBooks(data))
-      .catch((err) => console.error(err));
+    getBooks()
+      .then((data) => {
+        setBooks(data);
+        setLoading(false);
+      })
+      .catch(() => {
+        setError("Backend not reachable");
+        setLoading(false);
+      });
   }, []);
 
-  // Add new book
-  const addBook = () => {
-    if (!title || !author) {
-      alert("Both fields are required");
-      return;
-    }
+  const handleAddBook = () => {
+    if (!title || !author) return;
 
-    fetch("http://localhost:8000/books", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ title, author }),
-    })
-      .then((res) => res.json())
+    addBook({ title, author })
       .then(() => {
         setBooks([...books, { title, author }]);
         setTitle("");
         setAuthor("");
-      });
+      })
+      .catch(() => setError("Failed to add book"));
   };
 
+  if (loading) return <p>Loading books...</p>;
+  if (error) return <p style={{ color: "red" }}>{error}</p>;
+
   return (
-    <div style={{ padding: "30px" }}>
+    <div>
       <h2>📚 Library App</h2>
 
       <input
-        placeholder="Book Title"
+        placeholder="Title"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
       />
@@ -49,19 +49,14 @@ function App() {
         placeholder="Author"
         value={author}
         onChange={(e) => setAuthor(e.target.value)}
-        style={{ marginLeft: "10px" }}
       />
 
-      <button onClick={addBook} style={{ marginLeft: "10px" }}>
-        Add Book
-      </button>
-
-      <hr />
+      <button onClick={handleAddBook}>Add Book</button>
 
       <ul>
-        {books.map((book, index) => (
-          <li key={index}>
-            <b>{book.title}</b> — {book.author}
+        {books.map((book, idx) => (
+          <li key={idx}>
+            {book.title} — {book.author}
           </li>
         ))}
       </ul>
